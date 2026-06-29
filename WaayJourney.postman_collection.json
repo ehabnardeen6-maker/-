@@ -1,0 +1,1641 @@
+{
+  "info": {
+    "_postman_id": "waay-journey-full-api-v1",
+    "name": "WعY Journey — Backend API",
+    "description": "## WعY Journey API Collection\n\nFull REST API for the WعY Journey mental wellness platform.\n\n### Recommended Run Order\n1. **Auth → Login as Admin** — sets `adminToken` + `token`\n2. **Admin → Coaches → Create Coach** — sets `coachId`\n3. **Admin → Tests → Create Test** — sets `testId`\n4. **Admin → Questions → Add Question** — sets `questionId`\n5. **Auth → Login as User** — updates `token` to user scope\n6. **Tests → List All Tests** — refreshes `testId`\n7. **Tests → Get Test with Questions** — sets `q1Id`, `q2Id`\n8. **Tests → Submit Test** — sets `submissionId`\n9. **Chat → Start Conversation** — sets `conversationId`\n\n### Auto-Managed Variables\n| Variable | Set By |\n|---|---|\n| `token` | Login as User / Login as Admin |\n| `adminToken` | Login as Admin |\n| `testId` | Admin → Create Test OR Tests → List All |\n| `questionId` | Admin → Add Question |\n| `q1Id`, `q2Id` | Tests → Get Test with Questions |\n| `coachId` | Admin → Create Coach OR Coaches → List |\n| `conversationId` | Chat → Start Conversation |\n| `submissionId` | Tests → Submit Test |\n| `userId` | Admin → Create User |\n| `submissionAdminId` | Admin → List Submissions |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",           "value": "http://localhost:5000", "type": "string",  "description": "Backend base URL" },
+    { "key": "token",             "value": "",                      "type": "string",  "description": "JWT for current user — auto-set by login" },
+    { "key": "adminToken",        "value": "",                      "type": "string",  "description": "JWT for admin — auto-set by Login as Admin" },
+    { "key": "testId",            "value": "",                      "type": "string",  "description": "Active test _id" },
+    { "key": "questionId",        "value": "",                      "type": "string",  "description": "Active question _id" },
+    { "key": "q1Id",              "value": "",                      "type": "string",  "description": "First question _id from Get Test with Questions" },
+    { "key": "q2Id",              "value": "",                      "type": "string",  "description": "Second question _id from Get Test with Questions" },
+    { "key": "coachId",           "value": "",                      "type": "string",  "description": "Active coach _id" },
+    { "key": "conversationId",    "value": "",                      "type": "string",  "description": "Active conversation _id" },
+    { "key": "submissionId",      "value": "",                      "type": "string",  "description": "User submission _id — set by Submit Test" },
+    { "key": "userId",            "value": "",                      "type": "string",  "description": "Admin-created user _id — set by Create User" },
+    { "key": "submissionAdminId", "value": "",                      "type": "string",  "description": "Submission _id from Admin → List Submissions" }
+  ],
+  "item": [
+
+    {
+      "name": "🔑 Auth",
+      "description": "Registration, login, logout, and current user profile.",
+      "item": [
+
+        {
+          "name": "Sign Up",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Returns userId\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"userId\");",
+                  "    pm.expect(json.message).to.equal(\"User created\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Ahmed Al-Rashid\",\n    \"email\": \"ahmed@example.com\",\n    \"password\": \"Password@123\",\n    \"age\": 25\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "signup"]
+            },
+            "description": "Register a new user account. Role is always `user` — admins are seeded or created via Admin → Create User.\n\n**Validations:** name + email + password required, password ≥ 8 chars, unique email.\n\n**Returns:** `{ message, userId }`"
+          }
+        },
+
+        {
+          "name": "Login as User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Token returned and saved\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"token\");",
+                  "    pm.expect(json).to.have.property(\"user\");",
+                  "    pm.collectionVariables.set(\"token\", json.token);",
+                  "    console.log(\"✅ token saved for:\", json.user.email);",
+                  "});",
+                  "pm.test(\"User role is user\", () => {",
+                  "    pm.expect(pm.response.json().user.role).to.equal(\"user\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ahmed@example.com\",\n    \"password\": \"Password@123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login as a regular user. Saves JWT to `token` for all authenticated endpoints.\n\n**Returns:** `{ token, user: { id, name, email, role } }`"
+          }
+        },
+
+        {
+          "name": "Login as Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Admin token saved\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.user.role).to.equal(\"admin\");",
+                  "    pm.collectionVariables.set(\"adminToken\", json.token);",
+                  "    pm.collectionVariables.set(\"token\", json.token);",
+                  "    console.log(\"✅ adminToken + token saved for:\", json.user.email);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@waay.com\",\n    \"password\": \"Admin@12345\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login using the seeded admin credentials. Saves token to both `adminToken` and `token`.\n\n**Run this first** before calling any `/admin/*` endpoint.\n\nCredentials are set in `.env`: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`."
+          }
+        },
+
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns logged out message\", () => {",
+                  "    pm.expect(pm.response.json().message).to.equal(\"Logged out\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Stateless logout — the server returns 200 and the client discards the token. No token blocklist is maintained."
+          }
+        },
+
+        {
+          "name": "Get Current User (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has id, name, email, role\", () => {",
+                  "    const json = pm.response.json();",
+                  "    [\"id\", \"name\", \"email\", \"role\"].forEach(key => {",
+                  "        pm.expect(json, `Missing key: ${key}`).to.have.property(key);",
+                  "    });",
+                  "});",
+                  "pm.test(\"Password not exposed\", () => {",
+                  "    pm.expect(pm.response.json()).to.not.have.property(\"password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns the authenticated user's profile fetched live from the database (not decoded from token)."
+          }
+        },
+
+        {
+          "name": "Forgot Password (Send OTP)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns generic message (prevents user enumeration)\", () => {",
+                  "    pm.expect(pm.response.json().message).to.include(\"reset code\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ahmed@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "Generates a 6-digit OTP, stores a bcrypt hash of it (with 10-minute expiry), and emails it to the user.\n\nAlways returns 200 regardless of whether the email exists — this prevents user enumeration attacks.\n\n**Flow:** Forgot Password → Verify OTP → Reset Password"
+          }
+        },
+
+        {
+          "name": "Verify OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"OTP verified\", () => {",
+                  "    pm.expect(pm.response.json().message).to.equal(\"Code verified\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ahmed@example.com\",\n    \"otp\": \"123456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-otp"]
+            },
+            "description": "Checks the OTP is valid and not expired **without consuming it**. Use this to confirm the code before showing the new-password form.\n\n**Errors:**\n- `400` — invalid code\n- `400` — code has expired\n\nAfter success, call **Reset Password** with the same OTP."
+          }
+        },
+
+        {
+          "name": "Reset Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Password reset confirmed\", () => {",
+                  "    pm.expect(pm.response.json().message).to.include(\"reset successfully\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ahmed@example.com\",\n    \"otp\": \"123456\",\n    \"newPassword\": \"NewPassword@456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "reset-password"]
+            },
+            "description": "Re-verifies the OTP, hashes the new password, saves it, and **clears the OTP fields** so the code cannot be reused.\n\n**Validations:** all 3 fields required, newPassword ≥ 8 chars, OTP must still be valid.\n\nAfter success, the user can log in with their new password."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "🧪 Tests",
+      "description": "Browse tests, view questions, submit answers, and fetch results. Most endpoints require authentication.",
+      "item": [
+
+        {
+          "name": "List All Tests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));",
+                  "const tests = pm.response.json();",
+                  "if (tests.length > 0) {",
+                  "    pm.collectionVariables.set(\"testId\", tests[0]._id);",
+                  "    console.log(\"✅ testId saved:\", tests[0]._id, \"-\", tests[0].title);",
+                  "} else {",
+                  "    console.warn(\"⚠️ No tests found. Run Admin → Tests → Create Test first.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tests"]
+            },
+            "description": "Returns all tests with `title`, `description`, `type`, `isPremium`, `createdAt`. Saves the first `_id` to `testId`."
+          }
+        },
+
+        {
+          "name": "Get Test with Questions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has title and questions array\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"title\");",
+                  "    pm.expect(json.questions).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Scoring metadata NOT exposed to client\", () => {",
+                  "    const json = pm.response.json();",
+                  "    if (json.questions.length > 0) {",
+                  "        pm.expect(json.questions[0]).to.not.have.property(\"dimension\");",
+                  "        pm.expect(json.questions[0]).to.not.have.property(\"favoredPole\");",
+                  "    }",
+                  "});",
+                  "const questions = pm.response.json().questions;",
+                  "if (questions.length >= 1) {",
+                  "    pm.collectionVariables.set(\"q1Id\", questions[0]._id);",
+                  "    console.log(\"✅ q1Id saved:\", questions[0]._id);",
+                  "}",
+                  "if (questions.length >= 2) {",
+                  "    pm.collectionVariables.set(\"q2Id\", questions[1]._id);",
+                  "    console.log(\"✅ q2Id saved:\", questions[1]._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tests/{{testId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tests", "{{testId}}"]
+            },
+            "description": "Returns the test with all its questions. `dimension` and `favoredPole` are **stripped from the response** — scoring is computed server-side only.\n\nAlso saves the first 2 question IDs to `q1Id` and `q2Id` for the Submit Test request."
+          }
+        },
+
+        {
+          "name": "Submit Test",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const testId = pm.collectionVariables.get(\"testId\");",
+                  "const q1Id = pm.collectionVariables.get(\"q1Id\");",
+                  "if (!testId) console.warn(\"⚠️ testId is empty — run 'List All Tests' first.\");",
+                  "if (!q1Id) console.warn(\"⚠️ q1Id is empty — run 'Get Test with Questions' first.\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Returns result and submissionId\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"result\");",
+                  "    pm.expect(json).to.have.property(\"submissionId\");",
+                  "    pm.collectionVariables.set(\"submissionId\", json.submissionId);",
+                  "    console.log(\"✅ result:\", json.result, \"| submissionId saved:\", json.submissionId);",
+                  "});",
+                  "pm.test(\"MBTI result is 4 letters (if personality test)\", () => {",
+                  "    const result = pm.response.json().result;",
+                  "    if (result && result.length === 4) {",
+                  "        pm.expect(result).to.match(/^[EISNTFJP]{4}$/);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"answers\": [\n        { \"questionId\": \"{{q1Id}}\", \"selectedValue\": \"A\" },\n        { \"questionId\": \"{{q2Id}}\", \"selectedValue\": \"C\" }\n    ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tests/{{testId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tests", "{{testId}}", "submit"]
+            },
+            "description": "Submit answers for a test.\n\n**Before running:** execute `Get Test with Questions` to set `q1Id` / `q2Id`, or supply real MongoDB ObjectIds.\n\n**selectedValue** options:\n| Value | Meaning |\n|---|---|\n| A | Strongly Agree |\n| B | Agree |\n| C | Neutral |\n| D | Disagree |\n| E | Strongly Disagree |\n\n**Returns:** `{ result, description, score, submissionId }`"
+          }
+        },
+
+        {
+          "name": "Get My Result for Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has result and submittedAt\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"result\");",
+                  "    pm.expect(json).to.have.property(\"submittedAt\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tests/{{testId}}/result",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tests", "{{testId}}", "result"]
+            },
+            "description": "Returns the authenticated user's latest submission for the specified test."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "👤 Profile",
+      "description": "View and update the authenticated user's profile and submission history.",
+      "item": [
+
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has user and submissions array\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"user\");",
+                  "    pm.expect(json.submissions).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Password not exposed\", () => {",
+                  "    pm.expect(pm.response.json().user).to.not.have.property(\"password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            },
+            "description": "Returns the current user's profile alongside all their test submissions (with test titles populated)."
+          }
+        },
+
+        {
+          "name": "Update Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Name updated successfully\", () => {",
+                  "    pm.expect(pm.response.json().name).to.equal(\"Ahmed Updated\");",
+                  "});",
+                  "pm.test(\"Password not exposed\", () => {",
+                  "    pm.expect(pm.response.json()).to.not.have.property(\"password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Ahmed Updated\",\n    \"age\": 28,\n    \"avatar\": \"https://example.com/avatars/ahmed.png\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            },
+            "description": "Update the current user's profile. All three fields (`name`, `age`, `avatar`) are optional — send only what needs to change."
+          }
+        },
+
+        {
+          "name": "Upload Avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Avatar URL returned\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"avatar\");",
+                  "    pm.expect(json.avatar).to.include(\"/uploads/avatars/\");",
+                  "    console.log(\"✅ avatar URL:\", json.avatar);",
+                  "});",
+                  "pm.test(\"Password not exposed\", () => {",
+                  "    pm.expect(pm.response.json().user).to.not.have.property(\"password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select an image file (JPEG, PNG, WEBP, or GIF — max 2 MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile/avatar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile", "avatar"]
+            },
+            "description": "Upload an avatar image as `multipart/form-data`.\n\n**Field name:** `avatar` (file)\n\n**Allowed types:** JPEG, PNG, WEBP, GIF\n\n**Max size:** 2 MB\n\nThe old avatar file is automatically deleted from disk when a new one is uploaded. The returned `avatar` URL is a relative path (`/uploads/avatars/<filename>`) served as a static file by the backend.\n\n**Returns:** `{ message, avatar, user }`"
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "🏋️ Coaches",
+      "description": "Public coach directory — no authentication required.",
+      "item": [
+
+        {
+          "name": "List Available Coaches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));",
+                  "const coaches = pm.response.json();",
+                  "if (coaches.length > 0) {",
+                  "    pm.collectionVariables.set(\"coachId\", coaches[0]._id);",
+                  "    console.log(\"✅ coachId saved:\", coaches[0]._id, \"-\", coaches[0].name);",
+                  "} else {",
+                  "    console.warn(\"⚠️ No coaches. Run Admin → Coaches → Create Coach first.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/coaches",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "coaches"]
+            },
+            "description": "Returns all coaches where `isAvailable: true`. No auth required. Saves first `_id` to `coachId`."
+          }
+        },
+
+        {
+          "name": "Get Coach by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Has name and specialty\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"name\");",
+                  "    pm.expect(json).to.have.property(\"specialty\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/coaches/{{coachId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "coaches", "{{coachId}}"]
+            },
+            "description": "Returns a single coach's public profile."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "💬 Chat",
+      "description": "Real-time messaging with coaches. All endpoints require authentication.\n\nSocket.IO event emitted on send: `new_message` to room `conversationId`.",
+      "item": [
+
+        {
+          "name": "Start Conversation",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const coachId = pm.collectionVariables.get(\"coachId\");",
+                  "if (!coachId) console.warn(\"⚠️ coachId is empty — run 'List Available Coaches' first.\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Success (200 or 201)\", () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test(\"Returns conversation with _id\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"_id\");",
+                  "    pm.expect(json).to.have.property(\"coachId\");",
+                  "    pm.collectionVariables.set(\"conversationId\", json._id);",
+                  "    console.log(\"✅ conversationId saved:\", json._id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"coachId\": \"{{coachId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "start"]
+            },
+            "description": "Find or create a conversation between the current user and a coach. **Idempotent** — calling twice returns the same conversation.\n\nSaves `_id` to `conversationId`."
+          }
+        },
+
+        {
+          "name": "List My Conversations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "conversations"]
+            },
+            "description": "Returns conversations scoped to the caller's role:\n- **user** → their own conversations\n- **coach** → conversations where they are the coach\n- **admin** → all conversations"
+          }
+        },
+
+        {
+          "name": "Get Messages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns array sorted oldest-first\", () => {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{conversationId}}", "messages"]
+            },
+            "description": "Returns all messages in a conversation sorted by `createdAt` ascending. Access restricted to the conversation's user, their coach, or an admin."
+          }
+        },
+
+        {
+          "name": "Send Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Message has required fields\", () => {",
+                  "    const json = pm.response.json();",
+                  "    [\"_id\", \"text\", \"senderRole\", \"conversationId\"].forEach(k => {",
+                  "        pm.expect(json, `Missing: ${k}`).to.have.property(k);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"Hello! I'd like to talk about managing work-related stress.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{conversationId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{conversationId}}", "messages"]
+            },
+            "description": "Send a message in a conversation. The server saves the message, updates `lastMessageAt`, and emits a `new_message` Socket.IO event to the conversation room."
+          }
+        }
+
+      ]
+    },
+
+    {
+      "name": "⚙️ Admin",
+      "description": "Admin-only endpoints — all require `adminToken`.\n\nRun **Auth → Login as Admin** first.",
+      "item": [
+
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Get Stats",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Has count fields\", () => {",
+                      "    const json = pm.response.json();",
+                      "    [\"users\", \"tests\", \"submissions\", \"coaches\", \"conversations\"].forEach(k => {",
+                      "        pm.expect(json, `Missing: ${k}`).to.have.property(k);",
+                      "    });",
+                      "});",
+                      "pm.test(\"Has recentSubmissions and popularTests arrays\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json.recentSubmissions).to.be.an(\"array\");",
+                      "    pm.expect(json.popularTests).to.be.an(\"array\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "stats"]
+                },
+                "description": "Returns platform-wide dashboard data:\n- Total counts: users, tests, submissions, coaches, conversations\n- `recentSubmissions`: last 7 submissions with user + test info\n- `popularTests`: top 5 tests by submission count"
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "Tests",
+          "item": [
+
+            {
+              "name": "List Tests",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Returns array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests"]
+                },
+                "description": "Returns all tests with `createdBy` populated."
+              }
+            },
+
+            {
+              "name": "Get Test Detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Has questions and submissionCount\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json.questions).to.be.an(\"array\");",
+                      "    pm.expect(json).to.have.property(\"submissionCount\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests/{{testId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests", "{{testId}}"]
+                },
+                "description": "Returns a test with full questions (including `dimension` + `favoredPole`) and total submission count."
+              }
+            },
+
+            {
+              "name": "Create Test",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"Test created — testId saved\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.have.property(\"_id\");",
+                      "    pm.collectionVariables.set(\"testId\", json._id);",
+                      "    console.log(\"✅ testId saved:\", json._id, \"-\", json.title);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+                  { "key": "Content-Type",   "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"title\": \"Stress & Burnout Assessment\",\n    \"description\": \"Evaluate your current stress levels across work, relationships, and daily life.\",\n    \"type\": \"psychiatric\",\n    \"isPremium\": false\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests"]
+                },
+                "description": "Create a new test. Saves `_id` to `testId`.\n\n**type** values: `personality` | `psychiatric` | `general`"
+              }
+            },
+
+            {
+              "name": "Update Test",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Test updated\", () => {",
+                      "    pm.expect(pm.response.json()).to.have.property(\"_id\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+                  { "key": "Content-Type",   "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"title\": \"Stress & Burnout Assessment (v2)\",\n    \"description\": \"Updated: comprehensive stress evaluation across work, health, and relationships.\",\n    \"type\": \"psychiatric\",\n    \"isPremium\": true\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests/{{testId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests", "{{testId}}"]
+                },
+                "description": "Update a test's metadata. All body fields are optional."
+              }
+            },
+
+            {
+              "name": "Delete Test",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Cascade deletion confirmed\", () => {",
+                      "    pm.expect(pm.response.json().message).to.include(\"deleted\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests/{{testId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests", "{{testId}}"]
+                },
+                "description": "⚠️ **Destructive** — permanently deletes the test and all of its questions and submissions."
+              }
+            }
+
+          ]
+        },
+
+        {
+          "name": "Questions",
+          "item": [
+
+            {
+              "name": "List Questions for Test",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Returns array with scoring metadata\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.be.an(\"array\");",
+                      "    if (json.length > 0) {",
+                      "        pm.expect(json[0]).to.have.property(\"dimension\");",
+                      "        pm.collectionVariables.set(\"questionId\", json[0]._id);",
+                      "        console.log(\"✅ questionId saved:\", json[0]._id);",
+                      "    }",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests/{{testId}}/questions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests", "{{testId}}", "questions"]
+                },
+                "description": "Returns all questions for a test sorted by `order`. Includes admin-only fields `dimension` and `favoredPole`. Saves first `_id` to `questionId`."
+              }
+            },
+
+            {
+              "name": "Add Question",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"Question created — questionId saved\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.have.property(\"_id\");",
+                      "    pm.collectionVariables.set(\"questionId\", json._id);",
+                      "    console.log(\"✅ questionId saved:\", json._id);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+                  { "key": "Content-Type",   "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"text\": \"I feel energized by social gatherings rather than drained by them.\",\n    \"order\": 1,\n    \"dimension\": \"EI\",\n    \"favoredPole\": \"E\",\n    \"options\": [\n        { \"label\": \"A\", \"text\": \"Strongly Agree\" },\n        { \"label\": \"B\", \"text\": \"Agree\" },\n        { \"label\": \"C\", \"text\": \"Neutral\" },\n        { \"label\": \"D\", \"text\": \"Disagree\" },\n        { \"label\": \"E\", \"text\": \"Strongly Disagree\" }\n    ]\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/tests/{{testId}}/questions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "tests", "{{testId}}", "questions"]
+                },
+                "description": "Add a question to a test.\n\n**MBTI fields (for personality tests):**\n- `dimension`: `EI` | `SN` | `TF` | `JP`\n- `favoredPole`: `E` | `I` | `S` | `N` | `T` | `F` | `J` | `P`\n\nOmit `dimension` / `favoredPole` for non-MBTI tests.\n\nSaves `_id` to `questionId`."
+              }
+            },
+
+            {
+              "name": "Update Question",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Question updated\", () => {",
+                      "    pm.expect(pm.response.json()).to.have.property(\"_id\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+                  { "key": "Content-Type",   "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"text\": \"I feel energized by social gatherings and prefer being around people.\",\n    \"order\": 1,\n    \"dimension\": \"EI\",\n    \"favoredPole\": \"E\",\n    \"options\": [\n        { \"label\": \"A\", \"text\": \"Strongly Agree\" },\n        { \"label\": \"B\", \"text\": \"Agree\" },\n        { \"label\": \"C\", \"text\": \"Neutral\" },\n        { \"label\": \"D\", \"text\": \"Disagree\" },\n        { \"label\": \"E\", \"text\": \"Strongly Disagree\" }\n    ]\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/questions/{{questionId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "questions", "{{questionId}}"]
+                },
+                "description": "Update an existing question. All fields optional."
+              }
+            },
+
+            {
+              "name": "Delete Question",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Deleted\", () => {",
+                      "    pm.expect(pm.response.json().message).to.equal(\"Question deleted\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/questions/{{questionId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "questions", "{{questionId}}"]
+                },
+                "description": "Permanently delete a single question."
+              }
+            }
+
+          ]
+        },
+
+        {
+          "name": "Users",
+          "item": [
+
+            {
+              "name": "List Users",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Returns array without passwords\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.be.an(\"array\");",
+                      "    if (json.length > 0) pm.expect(json[0]).to.not.have.property(\"password\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/users?role=user",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "users"],
+                  "query": [
+                    { "key": "role",   "value": "user", "description": "Filter: user | admin | coach" },
+                    { "key": "search", "value": "",     "description": "Search by name or email", "disabled": true }
+                  ]
+                },
+                "description": "List all users. Optional filters:\n- `?role=user|admin|coach`\n- `?search=<partial name or email>`"
+              }
+            },
+
+            {
+              "name": "Get User Detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Has user and submissions\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.have.property(\"user\");",
+                      "    pm.expect(json).to.have.property(\"submissions\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/users/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "users", "{{userId}}"]
+                },
+                "description": "Full user profile plus all their test submissions."
+              }
+            },
+
+            {
+              "name": "Create User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"User created — userId saved\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.have.property(\"id\");",
+                      "    pm.collectionVariables.set(\"userId\", json.id);",
+                      "    console.log(\"✅ userId saved:\", json.id);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+                  { "key": "Content-Type",   "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Sara Al-Zahrani\",\n    \"email\": \"sara@example.com\",\n    \"password\": \"Secure@123\",\n    \"role\": \"user\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "users"]
+                },
+                "description": "Create a user account directly — bypasses public signup and can assign any role (`user`, `admin`, `coach`). Saves `id` to `userId`."
+              }
+            },
+
+            {
+              "name": "Change User Role",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Role updated\", () => {",
+                      "    pm.expect(pm.response.json()).to.have.property(\"role\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+                  { "key": "Content-Type",   "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"role\": \"coach\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/users/{{userId}}/role",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "users", "{{userId}}", "role"]
+                },
+                "description": "Change a user's role. Valid: `user` | `admin` | `coach`.\n\n⚠️ Admin cannot change their own role."
+              }
+            },
+
+            {
+              "name": "Delete User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Deleted with cascade note\", () => {",
+                      "    pm.expect(pm.response.json().message).to.include(\"deleted\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/users/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "users", "{{userId}}"]
+                },
+                "description": "⚠️ **Destructive** — deletes user + all their submissions. Admin cannot delete themselves."
+              }
+            }
+
+          ]
+        },
+
+        {
+          "name": "Submissions",
+          "item": [
+
+            {
+              "name": "List Submissions",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Returns array\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));",
+                      "const subs = pm.response.json();",
+                      "if (subs.length > 0) {",
+                      "    pm.collectionVariables.set(\"submissionAdminId\", subs[0]._id);",
+                      "    console.log(\"✅ submissionAdminId saved:\", subs[0]._id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/submissions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "submissions"],
+                  "query": [
+                    { "key": "testId", "value": "{{testId}}", "description": "Filter by test ID",  "disabled": true },
+                    { "key": "userId", "value": "{{userId}}", "description": "Filter by user ID",  "disabled": true }
+                  ]
+                },
+                "description": "List all submissions with user + test info populated. Filters:\n- `?testId=<id>` — narrow to a specific test\n- `?userId=<id>` — narrow to a specific user\n\nSaves first `_id` to `submissionAdminId`."
+              }
+            },
+
+            {
+              "name": "Get Submission Detail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Answers populated with question text\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.have.property(\"result\");",
+                      "    pm.expect(json.answers).to.be.an(\"array\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/submissions/{{submissionAdminId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "submissions", "{{submissionAdminId}}"]
+                },
+                "description": "Full submission detail with answers populated (question text and dimension)."
+              }
+            },
+
+            {
+              "name": "Delete Submission",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Deleted\", () => {",
+                      "    pm.expect(pm.response.json().message).to.equal(\"Submission deleted\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/submissions/{{submissionAdminId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "submissions", "{{submissionAdminId}}"]
+                },
+                "description": "Permanently delete a submission record."
+              }
+            }
+
+          ]
+        },
+
+        {
+          "name": "Coaches",
+          "item": [
+
+            {
+              "name": "List Coaches (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Returns array (includes unavailable)\", () => {",
+                      "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/coaches",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "coaches"]
+                },
+                "description": "Returns all coaches including unavailable ones (admin-only view)."
+              }
+            },
+
+            {
+              "name": "Get Coach Detail (Admin)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Has conversationCount\", () => {",
+                      "    pm.expect(pm.response.json()).to.have.property(\"conversationCount\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/coaches/{{coachId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "coaches", "{{coachId}}"]
+                },
+                "description": "Returns a coach profile with the number of active conversations they have."
+              }
+            },
+
+            {
+              "name": "Create Coach",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"Coach created — coachId saved\", () => {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json).to.have.property(\"_id\");",
+                      "    pm.collectionVariables.set(\"coachId\", json._id);",
+                      "    console.log(\"✅ coachId saved:\", json._id, \"-\", json.name);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "name",        "value": "Dr. Layla Hassan",                                                                                           "type": "text" },
+                    { "key": "title",       "value": "Clinical Psychologist",                                                                                      "type": "text" },
+                    { "key": "bio",         "value": "Dr. Layla has 12 years of experience helping individuals overcome anxiety, depression, and life transitions.", "type": "text" },
+                    { "key": "specialty",   "value": "Anxiety & Depression",                                                                                       "type": "text" },
+                    { "key": "isAvailable", "value": "true",                                                                                                       "type": "text" },
+                    { "key": "photo",       "type": "file", "src": "", "description": "Upload a JPEG/PNG/WEBP/GIF image (max 2 MB). Leave empty to omit photo." }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/coaches",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "coaches"]
+                },
+                "description": "Create a coach profile. **Only admins can create coaches** — no self-registration. Saves `_id` to `coachId`.\n\nSend as `multipart/form-data`. Upload a photo file in the `photo` field (JPEG/PNG/WEBP/GIF, max 2 MB). Leave `photo` empty to create the coach without a photo."
+              }
+            },
+
+            {
+              "name": "Update Coach",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Coach updated\", () => {",
+                      "    pm.expect(pm.response.json()).to.have.property(\"_id\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "name",        "value": "Dr. Layla Hassan",                                                                                                           "type": "text" },
+                    { "key": "title",       "value": "Senior Clinical Psychologist",                                                                                              "type": "text" },
+                    { "key": "bio",         "value": "Dr. Layla has 12 years of experience. Now specializing in trauma therapy and resilience building.",                         "type": "text" },
+                    { "key": "specialty",   "value": "Trauma & Resilience",                                                                                                      "type": "text" },
+                    { "key": "isAvailable", "value": "true",                                                                                                                     "type": "text" },
+                    { "key": "photo",       "type": "file", "src": "", "description": "Upload a new photo to replace the existing one (JPEG/PNG/WEBP/GIF, max 2 MB). Leave empty to keep the current photo." }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/admin/coaches/{{coachId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "coaches", "{{coachId}}"]
+                },
+                "description": "Update a coach profile. All fields are optional.\n\nSend as `multipart/form-data`. Upload a new photo file in the `photo` field to replace the existing one — the old file is deleted automatically. Leave `photo` empty to keep the current photo."
+              }
+            },
+
+            {
+              "name": "Delete Coach",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Deleted\", () => {",
+                      "    pm.expect(pm.response.json().message).to.equal(\"Coach deleted\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": {
+                  "raw": "{{baseUrl}}/admin/coaches/{{coachId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["admin", "coaches", "{{coachId}}"]
+                },
+                "description": "Permanently delete a coach profile."
+              }
+            }
+
+          ]
+        }
+
+      ]
+    }
+
+  ]
+}

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WعY_Journey</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Alkalami&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Badeen+Display&display=swap" rel="stylesheet">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/navbar.css">
+
+</head>
+
+<body>
+  <header class="main-header">
+  <div class="logo">
+    <img src="logo.png" alt="Logo">
+</div>
+  <nav class="main-nav">
+      <ul>
+          <li><a href="index.html" data-i18n="nav.home">Home</a></li>
+          <li><a href="pages/library.html" data-i18n="nav.library">Library</a></li>
+          <li><a href="pages/test.html" data-i18n="nav.tests">Tests</a></li>
+          <li><a href="pages/plans.html" data-i18n="nav.plans">Plans</a></li>
+          <li id="navProfileLink"><a href="pages/login.html" data-i18n="nav.joinUs">Join Us</a></li>
+      </ul>
+  </nav>
+  <div class="header-actions"></div>
+  <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+<script>
+  (function () {
+    var header = document.querySelector('.main-header');
+    window.addEventListener('scroll', function () {
+      // Ramp opacity from 0.2 → 0.92 over the first 200px of scroll
+      var opacity = Math.min((window.scrollY / 200) * 0.92, 0.92);
+      header.style.backgroundColor = 'rgba(10, 30, 60, ' + opacity + ')';
+    }, { passive: true });
+  })();
+</script>
+
+  <main class="hero-section">
+    <div class="hero-content">
+      <p class="small-title" data-i18n="home.smallTitle">Welcome to</p>
+      <h1 class="main-title">wعy</h1>
+      <p class="description" data-i18n="home.description">
+        "Wعy – helps you know yourself better and level up your life.
+        Find your strengths, discover what really fits you, and get guidance from Life Coaching pros.
+        Understand your feelings, stay balanced, and get extra support whenever you need it."
+      </p>
+      <button class="explore-btn" data-i18n="home.cta">Start Your Journey</button>
+    </div>
+
+    <div class="carousel-container">
+      <a href="pages/tests.html" class="card-link">
+  <div class="card yourself">
+    <div class="card-info" data-i18n="home.card.discover">Discover YourSelf</div>
+  </div>
+</a>
+
+
+      <a href="pages/life-coaching.html" class="card-link">
+        <div class="card life_Coaching">
+          <div class="card-info" data-i18n="home.card.coaching">Life Coaching</div>
+        </div>
+      </a>
+
+      <div class="card Psychology">
+        <div class="card-info" data-i18n="home.card.psychology">Psychology</div>
+      </div>
+    </div>
+  </main>
+  <section class="services-block" aria-label="Services">
+    <div class="container">
+      <div class="slide">
+
+        <!-- Slide 1 -->
+        <div class="item">
+          <div class="content">
+
+            <div class="service-header">
+              <img src="Psychiatric .png" alt="Psychiatric Icon">
+              <span class="mini-text"><span data-i18n="home.service.mental.label">Mental Health:</span>
+                <span class="extra-text" data-i18n="home.service.mental.body">comprehensive mental health evaluation by professionals to assess mood and cognitive health.
+Helps identify underlying issues and provides an accurate diagnosis with personalized treatment guidance.</span>
+              </span>
+            </div>
+
+            <div class="name" data-i18n="home.service.mental.name">Psychiatric Assessment</div>
+          </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="item">
+          <div class="content">
+
+            <div class="service-header">
+              <img src="Personality .png" alt="Personality Icon">
+              <span class="mini-text"><span data-i18n="home.service.self.label">Self Discovery:</span>
+                <span class="extra-text" data-i18n="home.service.self.body">A research-based personality test that reveals how you think, feel, and interact with others.
+Helps you understand your strengths, stress patterns, and choose paths and relationships that suit you.</span>
+              </span>
+            </div>
+
+            <div class="name" data-i18n="home.service.self.name">Personality Type Test</div>
+
+          </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="item">
+          <div class="content">
+
+            <div class="service-header">
+              <img src="Life Coaching .png" alt="Coaching Icon">
+              <span class="mini-text"><span data-i18n="home.service.growth.label">Life Growth:</span>
+                <span class="extra-text" data-i18n="home.service.growth.body">Goal-focused coaching that helps you clarify what you want and turn it into a clear action plan.
+Builds confidence, removes mental blocks, and supports real progress in your daily life.</span>
+              </span>
+            </div>
+
+            <div class="name" data-i18n="home.service.growth.name">Life Coaching Sessions</div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="btns" aria-hidden="false">
+        <button class="prev">&larr;</button>
+        <button class="next">&rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------------------------- -->
+
+
+  <footer class="cloud-footer">
+    <!-- Cloud Layer 1 -->
+    <div class="cloud cloud-back">
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+        <path d="
+          M0,80
+          C60,40 120,40 180,80
+          C240,120 300,120 360,80
+          C420,40 480,40 540,80
+          C600,120 660,120 720,80
+          C780,40 840,40 900,80
+          C960,120 1020,120 1080,80
+          C1140,40 1200,40 1260,80
+          C1320,120 1380,120 1440,80
+          L1440,0 L0,0 Z
+        "></path>
+      </svg>
+    </div>
+
+    <!-- Cloud Layer 2 -->
+    <div class="cloud cloud-front">
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+        <path d="
+          M0,90
+          C80,50 160,50 240,90
+          C320,130 400,130 480,90
+          C560,50 640,50 720,90
+          C800,130 880,130 960,90
+          C1040,50 1120,50 1200,90
+          C1280,130 1360,130 1440,90
+          L1440,0 L0,0 Z
+        "></path>
+      </svg>
+    </div>
+
+    <!-- Footer Content -->
+    <div class="footer-inner">
+      
+      
+      <div class="footer-section">
+        <h3 data-i18n="home.footer.follow">Follow Us</h3>
+        <div class="social-icons">
+          <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 WعY_Journey. <span data-i18n="home.footer.rights">All rights reserved</span> | <strong data-i18n="home.footer.care">Built with care</strong> |   <strong data-i18n="home.footer.purpose">Crafted with passion and purpose</strong></p>
+      </div>
+    </div>
+  </footer>
+
+
+
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+
+  <script src="js/i18n.js"></script>
+  <script>
+    // Check if user is logged in - redirect to homeWithProfile if logged in
+    (function() {
+      var token = localStorage.getItem('token');
+      var savedName = localStorage.getItem('savedName');
+      if (token || savedName) {
+        window.location.href = 'pages/home.html';
+      }
+    })();
+
+    var next = document.querySelector('.next');
+    var prev = document.querySelector('.prev');
+    var slide = document.querySelector('.slide');
+
+    next.addEventListener('click', function () {
+      var items = document.querySelectorAll('.item');
+      slide.appendChild(items[0]);
+    });
+
+    prev.addEventListener('click', function () {
+      var items = document.querySelectorAll('.item');
+      slide.prepend(items[items.length - 1]);
+    });
+
+  </script>
+
+<script src="js/nav.js"></script>
+</body>
+
+</html>

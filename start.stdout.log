@@ -1,0 +1,10 @@
+[dotenv@17.2.3] injecting env (14) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+Server running on port 5000
+MongoDB Connected
+[seedTests] ⏭️  Skipping "مقياس الأعراض التسعة للاكتئاب (PHQ-9)" — already exists and matches config.
+Admin already exists: admin@waay.com
+Coaches already exist (3) — skipped
+[seedTests] ⏭️  Skipping "مقياس الضبط الانفعالي كسمة (ERQ)" — already exists and matches config.
+[seedTests] ⏭️  Skipping "مقياس القلق الاجتماعي كسمة (SSAQ)" — already exists and matches config.
+[seedTests] 🎉 Psychiatric/general test seed complete.
